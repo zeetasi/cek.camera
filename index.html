@@ -1,0 +1,76 @@
+```
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kamera</title>
+  <style>
+    video {
+      width: 640px;
+      height: 480px;
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kamera</h1>
+  <video id="video" autoplay></video>
+  <button id="capture">Ambil Foto</button>
+  <button id="send">Kirim ke Telegram</button>
+  <script>
+    const video = document.getElementById('video');
+    const captureButton = document.getElementById('capture');
+    const sendButton = document.getElementById('send');
+    let stream;
+    let mediaRecorder;
+    let recordedBlobs;
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(s => {
+        stream = s;
+        video.srcObject = stream;
+        mediaRecorder = new MediaRecorder(stream);
+        recordedBlobs = [];
+        mediaRecorder.ondataavailable = event => {
+          if (event.data && event.data.size > 0) {
+            recordedBlobs.push(event.data);
+          }
+        };
+        mediaRecorder.onstop = () => {
+          const videoBlob = new Blob(recordedBlobs, { type: 'video/webm' });
+          const videoUrl = URL.createObjectURL(videoBlob);
+          const a = document.createElement('a');
+          a.href = videoUrl;
+          a.download = 'video.webm';
+          a.click();
+        };
+      })
+      .catch(err => {
+        console.error(err);
+      });
+
+    captureButton.addEventListener('click', () => {
+      mediaRecorder.start();
+      setTimeout(() => {
+        mediaRecorder.stop();
+      }, 5000); // Ambil video selama 5 detik
+    });
+
+    sendButton.addEventListener('click', () => {
+      const token = '7858549301:AAHkAWJyAtRKK4So81nUmR0ebAIsNu_GivE'; // Ganti dengan token bot Telegram Anda
+      const chatId = '7895289556'; // Ganti dengan ID chat Telegram Anda
+      const url = `https://api.telegram.org/bot${token}/sendVideo?chat_id=${chatId}`;
+      const formData = new FormData();
+      const videoBlob = new Blob(recordedBlobs, { type: 'video/webm' });
+      formData.append('video', videoBlob);
+      fetch(url, {
+        method: 'POST',
+        body: formData
+      })
+        .then(res => res.json())
+        .then(data => console.log(data))
+        .catch(err => console.error(err));
+    });
+  </script>
+</body>
+</html>
+```
